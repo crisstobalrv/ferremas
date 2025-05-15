@@ -1,0 +1,10 @@
+fastapi==0.103.2
+uvicorn==0.23.2
+sqlalchemy==1.4.49
+pydantic==1.10.13
+requests==2.31.0
+
+# Crear entorno:  python -m venv venv 
+# Activar entorno: venv\Scripts\activate
+# Instalar dependencias: pip install -r requirements.txt
+# Ejecutar backend: uvicorn main:app --reload

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>FERREMAS - Venta por Sucursal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container py-4">
+  <h1 class="mb-4 text-center">FERREMAS - Consulta y Venta</h1>
+
+  <!-- 🗂 Tabla stock general -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white text-center">Stock por Sucursal</div>
+    <div class="card-body">
+      <table class="table table-bordered" id="tabla-stock">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Sucursal</th>
+            <th>Cantidad</th>
+            <th>Precio CLP</th>
+          </tr>
+        </thead>
+        <tbody id="stock-body">
+          <!-- JS rellenará aquí -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+    <!-- 🔍 Buscador con botón -->
+<div class="row mb-3">
+  <div class="col-md-10">
+    <input type="text" id="buscador-producto" class="form-control" placeholder="Buscar producto por código (Ej. FER-123)">
+  </div>
+  <div class="col-md-2">
+    <button id="btn-buscar" class="btn btn-primary w-100">Buscar Producto</button>
+  </div>
+</div>
+
+  <!-- 🧾 Panel de venta: oculto al principio -->
+  <div class="card d-none" id="panel-venta">
+    <div class="card-header bg-success text-white">Registrar Venta</div>
+    <div class="card-body">
+      <form id="venta-form">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Código Producto</label>
+            <input type="text" class="form-control" id="codigo-producto" readonly>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Sucursal</label>
+            <select id="sucursal-select" class="form-select" required></select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Cantidad</label>
+            <input type="number" class="form-control" id="cantidad" required>
+          </div>
+        </div>
+
+    <div class="mt-4 d-flex justify-content-center gap-4" style="font-size: 1.3rem;">
+        <div>
+            💰 <strong>Total CLP:</strong>
+            <span id="total-clp" class="text-success">0</span>
+        </div>
+        <div>
+            🌎 <strong>Total USD:</strong>
+            <span id="total-usd" class="text-primary">0</span>
+        </div>
+    </div>
+    <div class="mt-3 text-center">
+          <button type="submit" class="btn btn-success">Vender</button>
+        </div>
+
+
+      <div id="respuesta" class="mt-3"></div>
+    </div>
+  </div>
+
+</div>
+
+</form>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="app.js"></script>
+
+<!-- Modal de stock agotado -->
+<div class="modal fade" id="modalStockAgotado" tabindex="-1" aria-labelledby="stockAgotadoLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content border-warning">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title" id="stockAgotadoLabel">Sucursales con Stock Agotado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body" id="modalStockAgotadoContenido">
+        <!-- JS insertará aquí los mensajes -->
+      </div>
+      <div class="modal-footer d-flex justify-content-center">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Aceptar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Venta Exitosa -->
+<div class="modal fade" id="modalVentaExitosa" tabindex="-1" aria-labelledby="ventaExitosaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content border-success">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="ventaExitosaLabel">✅ Venta Realizada</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body" id="modalVentaExitosaContenido">
+        <!-- JS insertará detalles -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-success" data-bs-dismiss="modal">Aceptar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+</body>
+</html>
