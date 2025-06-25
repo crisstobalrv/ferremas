@@ -1,11 +1,19 @@
-fastapi==0.104.1
-pydantic==2.5.2
-uvicorn==0.23.2
-sqlalchemy==1.4.49
-requests==2.31.0
+fastapi
+pydantic
+uvicorn
+sqlalchemy
+requests
+grpcio
+
+# pip install grpcio grpcio-tools
 
 
 # Crear entorno:  python -m venv venv 
 # Activar entorno: venv\Scripts\activate
 # Instalar dependencias: pip install -r requirements.txt
+
 # Ejecutar backend: uvicorn main:app --reload
+# Ejecutar servidor grpc: python grpc_server.py
+
+# Crear base de datos: python -m scripts.seed
+

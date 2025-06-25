@@ -8,14 +8,67 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("venta-form").addEventListener("submit", enviarVenta);
 });
 
+window.addEventListener("DOMContentLoaded", () => {
+  cargarStockGeneral();
+});
+
+
 function cargarStockGeneral() {
   fetch(`${API_BASE}/stock-general`)
     .then(res => res.json())
-    .then(data => renderTabla(data))
-    .catch(err => console.error("Error cargando stock general:", err));
+    .then(productos => {
+      const tbody = document.getElementById("stock-body");
+      tbody.innerHTML = "";
+
+      productos.forEach(producto => {
+        // Asegura que haya una ruta relativa válida
+        let imagenRelativa = producto.Imagen;
+
+        if (!imagenRelativa || imagenRelativa === "") {
+          imagenRelativa = "/static/images/default.jpg"; // puedes crear esta imagen
+        } else if (!imagenRelativa.startsWith("/")) {
+          imagenRelativa = `/static/images/${imagenRelativa}`;
+        }
+
+        const urlImagen = `${window.location.origin}${imagenRelativa}`;
+
+        console.log("🖼️ Imagen URL:", urlImagen); // Verifica en consola
+
+        producto.StockPorSucursal.forEach(stock => {
+  const imagenRelativa = producto.Imagen?.startsWith("/") ? producto.Imagen : `/static/images/${producto.Imagen}`;
+  const urlImagen = `${window.location.origin}${imagenRelativa}`;
+
+  tbody.innerHTML += `
+    <tr>
+      <td>${producto.Codigo}</td>
+      <td>${producto.Nombre}</td>
+      <td>${producto.Marca}</td> <!-- ✅ Aquí -->
+      <td>${stock.Sucursal}</td>
+      <td>${stock.Cantidad}</td>
+      <td>$${stock.Precio.toLocaleString("es-CL")}</td>
+      <td><img src="${urlImagen}" width="50" height="50"onerror="this.onerror=null; this.src='https://via.placeholder.com/50'" /></td>
+    </tr>
+  `;
+});
+
+      });
+    });
 }
 
+
+
+
+
 function renderTabla(data) {
+
+const idSucursal = parseInt(document.getElementById("sucursal-select").value);
+const stock = stockActual.find(s => s.SucursalId === idSucursal);
+
+if (!stock) return;
+
+const precio = stock.Precio || data.Producto?.Precio || 0;
+
+
   const tbody = document.getElementById("stock-body");
   tbody.innerHTML = "";
   data.forEach(producto => {
@@ -53,6 +106,13 @@ function buscarProducto() {
 let stockActual = []; // se guarda stock por sucursal del producto seleccionado
 
 function mostrarPanelVenta(data) {
+  console.log("🧪 Datos recibidos:", data);
+
+
+  window.productoSeleccionado = data.Producto;
+
+  console.log("✅ mostrarPanelVenta se está ejecutando");
+
   document.getElementById("panel-venta").classList.remove("d-none");
   document.getElementById("respuesta").innerHTML = "";
   document.getElementById("codigo-producto").value = data.Producto.Codigo;
@@ -61,13 +121,14 @@ function mostrarPanelVenta(data) {
   select.innerHTML = "";
   stockActual = data.StockPorSucursal;
 
-  stockActual.forEach((s, i) => {
+  // ✅ Agregar opciones al select
+  stockActual.forEach((s) => {
     const label = `${s.Sucursal} (Stock: ${s.Cantidad})`;
-    const option = `<option value="${i}">${label}</option>`;
+    const option = `<option value="${s.SucursalId}">${label}</option>`;
     select.innerHTML += option;
   });
 
-  // ✅ Mostrar modal SOLO si alguna sucursal no tiene stock
+  // ✅ Mostrar modal si alguna sucursal no tiene stock
   const haySinStock = stockActual.some(s => s.Cantidad === 0);
   if (haySinStock) {
     const listaSucursales = stockActual.map(s => {
@@ -85,14 +146,27 @@ function mostrarPanelVenta(data) {
     modal.show();
   }
 
-  calcularTotales();
+
+  const selectSucursal = document.getElementById("sucursal-select");
+  const inputCantidad = document.getElementById("cantidad");
+
+  selectSucursal.removeEventListener("change", calcularTotales);
+  inputCantidad.removeEventListener("input", calcularTotales);
+
+  selectSucursal.addEventListener("change", calcularTotales);
+  inputCantidad.addEventListener("input", calcularTotales);
+
+  calcularTotales(); // ✅ cálculo inicial
 }
 
 
+
+
 function calcularTotales() {
-  const i = parseInt(document.getElementById("sucursal-select").value);
+  const idSucursal = parseInt(document.getElementById("sucursal-select").value);
   const cantidad = parseInt(document.getElementById("cantidad").value);
-  const stock = stockActual[i];
+
+  const stock = stockActual.find(s => s.SucursalId === idSucursal);
 
   if (!stock || isNaN(cantidad) || cantidad <= 0) {
     document.getElementById("total-clp").innerText = "0";
@@ -107,10 +181,20 @@ function calcularTotales() {
     document.getElementById("respuesta").innerHTML = "";
   }
 
-  const totalCLP = cantidad * stock.Precio;
+  // ✅ Usar precio del stock o del producto
+  let precioUnitario = 0;
+
+  if (stock.Precio && stock.Precio > 0) {
+    precioUnitario = stock.Precio;
+  } else if (window.productoSeleccionado?.precio > 0) {
+    precioUnitario = window.productoSeleccionado.precio;
+  } else {
+    precioUnitario = 0;
+  }
+
+  const totalCLP = cantidad * precioUnitario;
   document.getElementById("total-clp").innerText = `$${totalCLP.toLocaleString("es-CL")}`;
 
-  // Obtener tipo de cambio y calcular USD
   fetch(`${API_BASE}/exchange-rate`)
     .then(res => res.json())
     .then(data => {
@@ -123,12 +207,31 @@ function calcularTotales() {
     });
 }
 
+
+
+
+
+
 function enviarVenta(e) {
   e.preventDefault();
 
-  const i = parseInt(document.getElementById("sucursal-select").value);
+  const idSucursal = parseInt(document.getElementById("sucursal-select").value);
   const cantidad = parseInt(document.getElementById("cantidad").value);
-  const stock = stockActual[i];
+  if (isNaN(cantidad) || cantidad <= 0) {
+  document.getElementById("respuesta").innerHTML =
+    `<div class="alert alert-warning">⚠️ Debes ingresar una cantidad mayor a cero.</div>`;
+  return;
+}
+
+
+  // 🧠 Buscar el stock seleccionado por ID real
+  const stock = stockActual.find(s => s.SucursalId === idSucursal);
+
+  if (!stock) {
+    document.getElementById("respuesta").innerHTML =
+      `<div class="alert alert-danger">❌ Stock no encontrado para esta sucursal.</div>`;
+    return;
+  }
 
   if (cantidad > stock.Cantidad) {
     document.getElementById("respuesta").innerHTML =
@@ -137,10 +240,23 @@ function enviarVenta(e) {
   }
 
   const payload = {
-    codigo_producto: document.getElementById("codigo-producto").value,
-    id_sucursal: stock.SucursalId || i + 1, // si tienes ID real, úsalo
-    cantidad: cantidad
-  };
+  codigo_producto: document.getElementById("codigo-reponer").value,
+  id_sucursal: parseInt(document.getElementById("sucursal-reponer").value),
+  cantidad: parseInt(document.getElementById("cantidad-reponer").value),
+  precio: parseFloat(document.getElementById("precio-reponer").value)
+};
+
+fetch(`${API_BASE}/reponer`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload)
+})
+  .then(res => res.json())
+  .then(data => {
+    console.log("✅ Stock actualizado", data);
+    // cerrar modal, refrescar tabla, etc.
+  });
+
 
   fetch(`${API_BASE}/venta`, {
     method: "POST",
@@ -155,28 +271,21 @@ function enviarVenta(e) {
         return;
       }
 
-      let msg = `
-        <div class="alert alert-success">
-          ✅ Venta realizada: ${data.cantidad_vendida} unidad(es)<br>
-          Stock restante: ${data.stock_restante}<br>
-          Total CLP: <strong>$${data.total_clp.toLocaleString("es-CL")}</strong><br>
-          Total USD: <strong>$${data.total_usd.toLocaleString("en-US")}</strong>
-        </div>`;
-
-      if (data.stock_agotado) {
-        msg += `<div class="alert alert-warning">⚠️ Stock agotado en esta sucursal.</div>`;
-      }
-
+      // ✅ Mostrar resultado en modal
       mostrarModalVenta(data);
-      cargarStockGeneral(); // actualizar tabla principal
+      cargarStockGeneral(); // Actualizar tabla
     })
     .catch(err => {
       console.error("Error:", err);
       document.getElementById("respuesta").innerHTML =
         `<div class="alert alert-danger">❌ Error al procesar la venta.</div>`;
     });
-    
+
+    console.log("Producto:", payload.codigo_producto);
+    console.log("Sucursal ID:", payload.id_sucursal);
+
 }
+
 
 function mostrarModalError(titulo, mensaje) {
   const modalHtml = `
@@ -201,6 +310,9 @@ function mostrarModalError(titulo, mensaje) {
 }
 
 function mostrarModalVenta(data) {
+
+  
+  
   let html = `
     <p><strong>Producto:</strong> ${data.producto}</p>
     <p><strong>Sucursal:</strong> ${data.sucursal}</p>
@@ -219,12 +331,8 @@ function mostrarModalVenta(data) {
   modal.show();
 }
 
-// Escuchar alertas del backend vía SSE
-const eventSource = new EventSource(`${API_BASE}/sse`);
 
-eventSource.onmessage = function (event) {
-  const msg = event.data;
-
+function mostrarModalSSE(msg) {
   // Eliminar modal anterior si existe
   const existente = document.getElementById("modalSSE");
   if (existente) existente.remove();
@@ -246,9 +354,139 @@ eventSource.onmessage = function (event) {
     </div>
   `;
 
-  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
   const modal = new bootstrap.Modal(document.getElementById("modalSSE"));
   modal.show();
+}
+
+let mensajePendienteSSE = null;
+
+const eventSource = new EventSource(`${API_BASE}/sse`);
+
+eventSource.onmessage = function (event) {
+  const msg = event.data;
+  const modalActivo = document.querySelector(".modal.show");
+
+  if (modalActivo) {
+    mensajePendienteSSE = msg; // Guarda mensaje pendiente
+  } else {
+    mostrarModalSSE(msg); // Muestra inmediatamente
+  }
 };
+
+document.addEventListener("hidden.bs.modal", function (event) {
+  const modalesImportantes = [
+    "modalVentaExitosa",
+    "modalStockAgotado",
+    "modalError"
+  ];
+
+  if (modalesImportantes.includes(event.target.id) && mensajePendienteSSE) {
+    mostrarModalSSE(mensajePendienteSSE);
+    mensajePendienteSSE = null;
+  }
+});
+
+document.getElementById("form-crear-producto").addEventListener("submit", function (e) {
+  e.preventDefault();
+
+  const formData = new FormData();
+  formData.append("codigo", document.getElementById("nuevo-codigo").value.trim());
+  formData.append("nombre", document.getElementById("nuevo-nombre").value.trim());
+  formData.append("marca", document.getElementById("nuevo-marca").value.trim());
+  formData.append("precio", document.getElementById("nuevo-precio").value.trim());
+  formData.append("imagen", document.getElementById("nuevo-imagen").files[0]);
+
+  const respuestaDiv = document.getElementById("crear-producto-respuesta");
+
+  fetch(`${API_BASE}/productos`, {
+    method: "POST",
+    body: formData
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.detail) {
+        respuestaDiv.innerHTML = `<div class="alert alert-danger">❌ ${data.detail}</div>`;
+      } else {
+        respuestaDiv.innerHTML = `<div class="alert alert-success">✅ Producto creado correctamente.</div>`;
+        setTimeout(() => {
+          document.getElementById("modalCrearProducto").querySelector(".btn-close").click();
+          cargarStockGeneral();
+        }, 1000);
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      respuestaDiv.innerHTML = `<div class="alert alert-danger">❌ Error al crear el producto.</div>`;
+    });
+});
+
+
+document.getElementById("modalAgregarStock").addEventListener("show.bs.modal", () => {
+  // cargar productos
+  fetch(`${API_BASE}/productos`)
+    .then(res => res.json())
+    .then(productos => {
+      const selectProd = document.getElementById("producto-stock");
+      selectProd.innerHTML = "";
+      console.log("Respuesta de /productos:", productos); // 👈 
+      productos.forEach(p => {
+        selectProd.innerHTML += `<option value="${p.codigo}">${p.nombre}</option>`;
+      });
+      
+    });
+
+  // cargar sucursales
+  fetch(`${API_BASE}/sucursales`)
+    .then(res => res.json())
+    .then(sucursales => {
+      const selectSuc = document.getElementById("sucursal-stock");
+      selectSuc.innerHTML = "";
+      sucursales.forEach(s => {
+        selectSuc.innerHTML += `<option value="${s.id}">${s.nombre}</option>`;
+      });
+    });
+});
+
+document.getElementById("form-agregar-stock").addEventListener("submit", function (e) {
+  e.preventDefault();
+
+  const codigo_producto = document.getElementById("producto-stock").value;
+  const id_sucursal = parseInt(document.getElementById("sucursal-stock").value);
+  const cantidad = parseInt(document.getElementById("cantidad-stock").value);
+
+  const respuesta = document.getElementById("respuesta-agregar-stock");
+
+  if (!codigo_producto || !id_sucursal || isNaN(cantidad) || cantidad <= 0) {
+    respuesta.innerHTML = `<div class="alert alert-warning">⚠️ Debes completar todos los campos correctamente.</div>`;
+    return;
+  }
+
+  fetch(`${API_BASE}/reponer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ codigo_producto, id_sucursal, cantidad })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.detail) {
+        respuesta.innerHTML = `<div class="alert alert-danger">❌ ${data.detail}</div>`;
+      } else {
+        respuesta.innerHTML = `<div class="alert alert-success">✅ ${data.mensaje}</div>`;
+        setTimeout(() => {
+          document.getElementById("modalAgregarStock").querySelector(".btn-close").click();
+          cargarStockGeneral();
+        }, 1000);
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      respuesta.innerHTML = `<div class="alert alert-danger">❌ Error al reponer stock.</div>`;
+    });
+});
+
+
+
+
 
 

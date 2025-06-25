@@ -3,6 +3,9 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from config.database import get_db
 from models.stock import Stock
+from models.product import Product
+from models.branch import Branch
+
 from utils.currency import obtener_valor_dolar
 from fastapi import Body
 from routes.sse import sse_alertas
@@ -42,8 +45,11 @@ def registrar_venta(venta: VentaRequest, db: Session = Depends(get_db)):
 
     stock_agotado = stock.cantidad == 0
 
-    if stock.cantidad <= 2:
-        alerta = f"Stock crítico: '{venta.codigo_producto}' tiene solo {stock.cantidad} unidad(es) en la sucursal {venta.id_sucursal}"
+    if stock.cantidad <= 10:
+        producto = db.query(Product).filter_by(codigo=venta.codigo_producto).first()
+        sucursal = db.query(Branch).filter_by(id=venta.id_sucursal).first()
+        alerta = f"⚠️ Stock crítico: {producto.nombre} tiene solo {stock.cantidad} unidad(es) en la sucursal {sucursal.nombre}"
+
         sse_alertas.append(alerta)
 
 
@@ -71,10 +77,20 @@ def reponer_stock(
     ).first()
 
     if not stock:
-        raise HTTPException(status_code=404, detail="Stock no encontrado")
+    # Crear nuevo registro de stock si no existe
+        stock = Stock(
+            producto_codigo=codigo_producto,
+            sucursal_id=id_sucursal,
+            cantidad=cantidad,
+            precio=0  # o algún valor por defecto
+        )
+        db.add(stock)
+    else:
+        # Aumentar cantidad si ya existe
+        stock.cantidad += cantidad
 
-    stock.cantidad += cantidad
     db.commit()
+
 
     return {
         "mensaje": f"Stock actualizado. Nueva cantidad: {stock.cantidad}",

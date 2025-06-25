@@ -8,7 +8,16 @@
 <body class="bg-light">
 
 <div class="container py-4">
-  <h1 class="mb-4 text-center">FERREMAS - Consulta y Venta</h1>
+  <h1 class="mb-4 text-center">FERREMAS - Consulta, Venta y Reposicion de productos</h1>
+
+  <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalCrearProducto">
+  ➕ Añadir nuevo producto
+</button>
+<button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalAgregarStock">
+  📦 Agregar stock a producto
+</button>
+
+
 
   <!-- 🗂 Tabla stock general -->
   <div class="card mb-4">
@@ -17,10 +26,13 @@
       <table class="table table-bordered" id="tabla-stock">
         <thead>
           <tr>
-            <th>Producto</th>
+            <th>Id de Producto</th>
+            <th>Nombre</th>
+            <th>Marca</th>
             <th>Sucursal</th>
             <th>Cantidad</th>
             <th>Precio CLP</th>
+            <th>Imagen</th>
           </tr>
         </thead>
         <tbody id="stock-body">
@@ -33,7 +45,7 @@
     <!-- 🔍 Buscador con botón -->
 <div class="row mb-3">
   <div class="col-md-10">
-    <input type="text" id="buscador-producto" class="form-control" placeholder="Buscar producto por código (Ej. FER-123)">
+    <input type="text" id="buscador-producto" class="form-control" placeholder="Buscar producto por código (Ej. 123)">
   </div>
   <div class="col-md-2">
     <button id="btn-buscar" class="btn btn-primary w-100">Buscar Producto</button>
@@ -83,7 +95,7 @@
 
 </form>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="app.js"></script>
+
 
 <!-- Modal de stock agotado -->
 <div class="modal fade" id="modalStockAgotado" tabindex="-1" aria-labelledby="stockAgotadoLabel" aria-hidden="true">
@@ -121,7 +133,79 @@
   </div>
 </div>
 
+<!-- Modal Crear producto -->
+<div class="modal fade" id="modalCrearProducto" tabindex="-1" aria-labelledby="crearProductoLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content border-primary">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="crearProductoLabel">Añadir nuevo producto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <form id="form-crear-producto">
+          <div class="mb-3">
+            <label for="nuevo-codigo" class="form-label">Código</label>
+            <input type="text" class="form-control" id="nuevo-codigo" required>
+          </div>
+          <div class="mb-3">
+            <label for="nuevo-nombre" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="nuevo-nombre" required>
+          </div>
+          <div class="mb-3">
+            <label for="nuevo-marca" class="form-label">Marca</label>
+            <input type="text" class="form-control" id="nuevo-marca" required>
+          </div>
+          <div class="mb-3">
+            <label for="nuevo-precio" class="form-label">Precio ($CLP)</label>
+            <input type="number" class="form-control" id="nuevo-precio" min="1" required>
+          </div>
+          <div class="mb-3">
+            <label for="nuevo-imagen" class="form-label">Imagen</label>
+            <input type="file" class="form-control" id="nuevo-imagen" accept="image/*">
+          </div>
+          <div id="crear-producto-respuesta" class="mt-2"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" form="form-crear-producto" class="btn btn-success">Añadir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalAgregarStock" tabindex="-1" aria-labelledby="modalAgregarStockLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content border-warning">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="modalAgregarStockLabel">Agregar stock</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <form id="form-agregar-stock">
+          <div class="mb-3">
+            <label for="producto-stock" class="form-label">Producto</label>
+            <select id="producto-stock" class="form-select" required></select>
+          </div>
+          <div class="mb-3">
+            <label for="sucursal-stock" class="form-label">Sucursal</label>
+            <select id="sucursal-stock" class="form-select" required></select>
+          </div>
+          <div class="mb-3">
+            <label for="cantidad-stock" class="form-label">Cantidad</label>
+            <input type="number" class="form-control" id="cantidad-stock" min="1" required>
+          </div>
+          <div id="respuesta-agregar-stock"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" form="form-agregar-stock" class="btn btn-success">Agregar stock</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
+
+<script src="frontend/app.js"></script>
 </body>
 </html>

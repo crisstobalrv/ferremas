@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package ferremas;
+
+import "google/protobuf/empty.proto";
+
+// Mensaje para un producto
+message Producto {
+  string codigo = 1;
+  string nombre = 2;
+  string marca = 3;
+  float precio = 4;
+  string imagen = 5;
+}
+
+// Petición para buscar por código
+message CodigoRequest {
+  string codigo = 1;
+}
+
+// Respuesta para un producto
+message ProductoResponse {
+  Producto producto = 1;
+}
+
+// Lista de productos
+message ListaProductos {
+  repeated Producto productos = 1;
+}
+
+// Servicio
+service ProductoService {
+  rpc ObtenerProducto(CodigoRequest) returns (ProductoResponse);
+  rpc ListarProductos(google.protobuf.Empty) returns (ListaProductos);
+}

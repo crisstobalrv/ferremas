@@ -1,15 +1,22 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from config.database import Base, engine
-from models.product import Product
+from models import Product
 from models.branch import Branch
 from models.stock import Stock
 from routes import products 
 from routes import sales
 from routes import exchange
 from routes import sse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from routes.grpc_bridge import router as grpc_router
 
 app = FastAPI(title="FERREMAS API")
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,6 +26,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
 # Crea las tablas en la base de datos
 Base.metadata.create_all(bind=engine)
 
@@ -27,8 +36,10 @@ app.include_router(products.router, prefix="/api")
 app.include_router(sales.router, prefix="/api")
 app.include_router(exchange.router, prefix="/api")
 app.include_router(sse.router, prefix="/api")
+app.include_router(grpc_router)
+
 
 
 @app.get("/")
-def root():
-    return {"message": "FERREMAS API funcionando correctamente"}
+def serve_index():
+    return FileResponse("frontend/index.html")
