@@ -217,14 +217,14 @@ function enviarVenta(e) {
 
   const idSucursal = parseInt(document.getElementById("sucursal-select").value);
   const cantidad = parseInt(document.getElementById("cantidad").value);
+  const codigo = document.getElementById("codigo-producto").value;
+
   if (isNaN(cantidad) || cantidad <= 0) {
-  document.getElementById("respuesta").innerHTML =
-    `<div class="alert alert-warning">⚠️ Debes ingresar una cantidad mayor a cero.</div>`;
-  return;
-}
+    document.getElementById("respuesta").innerHTML =
+      `<div class="alert alert-warning">⚠️ Debes ingresar una cantidad mayor a cero.</div>`;
+    return;
+  }
 
-
-  // 🧠 Buscar el stock seleccionado por ID real
   const stock = stockActual.find(s => s.SucursalId === idSucursal);
 
   if (!stock) {
@@ -240,23 +240,10 @@ function enviarVenta(e) {
   }
 
   const payload = {
-  codigo_producto: document.getElementById("codigo-reponer").value,
-  id_sucursal: parseInt(document.getElementById("sucursal-reponer").value),
-  cantidad: parseInt(document.getElementById("cantidad-reponer").value),
-  precio: parseFloat(document.getElementById("precio-reponer").value)
-};
-
-fetch(`${API_BASE}/reponer`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(payload)
-})
-  .then(res => res.json())
-  .then(data => {
-    console.log("✅ Stock actualizado", data);
-    // cerrar modal, refrescar tabla, etc.
-  });
-
+    codigo_producto: codigo,
+    id_sucursal: idSucursal,
+    cantidad: cantidad
+  };
 
   fetch(`${API_BASE}/venta`, {
     method: "POST",
@@ -271,20 +258,19 @@ fetch(`${API_BASE}/reponer`, {
         return;
       }
 
-      // ✅ Mostrar resultado en modal
+      // ✅ Mostrar resultado en modal de venta exitosa
       mostrarModalVenta(data);
-      cargarStockGeneral(); // Actualizar tabla
+      cargarStockGeneral(); // Actualizar tabla principal
+
+      console.log("✅ Venta realizada:", data);
     })
     .catch(err => {
       console.error("Error:", err);
       document.getElementById("respuesta").innerHTML =
         `<div class="alert alert-danger">❌ Error al procesar la venta.</div>`;
     });
-
-    console.log("Producto:", payload.codigo_producto);
-    console.log("Sucursal ID:", payload.id_sucursal);
-
 }
+
 
 
 function mostrarModalError(titulo, mensaje) {
