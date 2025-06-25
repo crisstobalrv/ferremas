@@ -31,38 +31,42 @@ def registrar_venta(venta: VentaRequest, db: Session = Depends(get_db)):
     if stock.cantidad < venta.cantidad:
         raise HTTPException(status_code=400, detail="Stock insuficiente")
 
-    stock.cantidad -= venta.cantidad
-    db.commit()
+    # Obtener producto (se necesita para el precio y nombre)
+    producto = db.query(Product).filter_by(codigo=venta.codigo_producto).first()
+
+    # Asegurar precio correcto
+    precio_unitario = stock.precio or producto.precio
+    total_clp = venta.cantidad * precio_unitario
 
     # Obtener el tipo de cambio
     dolar = obtener_valor_dolar()
     if dolar is None:
         raise HTTPException(status_code=503, detail="No se pudo obtener el tipo de cambio actual")
 
-    # Calcular total en CLP y USD
-    total_clp = venta.cantidad * stock.precio
     total_usd = round(total_clp / dolar, 2)
 
-    stock_agotado = stock.cantidad == 0
+    # Actualizar stock
+    stock.cantidad -= venta.cantidad
+    db.commit()
 
+    # Verificar stock crítico
+    stock_agotado = stock.cantidad == 0
     if stock.cantidad <= 10:
-        producto = db.query(Product).filter_by(codigo=venta.codigo_producto).first()
         sucursal = db.query(Branch).filter_by(id=venta.id_sucursal).first()
         alerta = f"⚠️ Stock crítico: {producto.nombre} tiene solo {stock.cantidad} unidad(es) en la sucursal {sucursal.nombre}"
-
         sse_alertas.append(alerta)
 
-
     return {
-    "mensaje": "Venta realizada correctamente",
-    "producto": venta.codigo_producto,
-    "sucursal": venta.id_sucursal,
-    "cantidad_vendida": venta.cantidad,
-    "stock_restante": stock.cantidad,
-    "total_clp": total_clp,
-    "total_usd": total_usd,
-    "stock_agotado": stock_agotado
-}
+        "mensaje": "Venta realizada correctamente",
+        "producto": venta.codigo_producto,
+        "sucursal": venta.id_sucursal,
+        "cantidad_vendida": venta.cantidad,
+        "stock_restante": stock.cantidad,
+        "total_clp": total_clp,
+        "total_usd": total_usd,
+        "stock_agotado": stock_agotado
+    }
+
 
 @router.post("/reponer")
 def reponer_stock(
