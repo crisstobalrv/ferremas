@@ -219,3 +219,36 @@ function mostrarModalVenta(data) {
   modal.show();
 }
 
+// Escuchar alertas del backend vía SSE
+const eventSource = new EventSource(`${API_BASE}/sse`);
+
+eventSource.onmessage = function (event) {
+  const msg = event.data;
+
+  // Eliminar modal anterior si existe
+  const existente = document.getElementById("modalSSE");
+  if (existente) existente.remove();
+
+  const modalHtml = `
+    <div class="modal fade" id="modalSSE" tabindex="-1" aria-labelledby="modalSSELabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content border-warning">
+          <div class="modal-header bg-warning text-dark">
+            <h5 class="modal-title" id="modalSSELabel">🔔 Alerta de Stock</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">${msg}</div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Aceptar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  const modal = new bootstrap.Modal(document.getElementById("modalSSE"));
+  modal.show();
+};
+
+

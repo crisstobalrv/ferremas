@@ -7,6 +7,7 @@ from models.stock import Stock
 from routes import products 
 from routes import sales
 from routes import exchange
+from routes import sse
 
 app = FastAPI(title="FERREMAS API")
 
@@ -25,6 +26,7 @@ Base.metadata.create_all(bind=engine)
 app.include_router(products.router, prefix="/api")
 app.include_router(sales.router, prefix="/api")
 app.include_router(exchange.router, prefix="/api")
+app.include_router(sse.router, prefix="/api")
 
 
 @app.get("/")

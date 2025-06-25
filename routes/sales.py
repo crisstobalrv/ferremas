@@ -5,6 +5,7 @@ from config.database import get_db
 from models.stock import Stock
 from utils.currency import obtener_valor_dolar
 from fastapi import Body
+from routes.sse import sse_alertas
 
 
 router = APIRouter()
@@ -40,6 +41,10 @@ def registrar_venta(venta: VentaRequest, db: Session = Depends(get_db)):
     total_usd = round(total_clp / dolar, 2)
 
     stock_agotado = stock.cantidad == 0
+
+    if stock.cantidad <= 2:
+        alerta = f"Stock crítico: '{venta.codigo_producto}' tiene solo {stock.cantidad} unidad(es) en la sucursal {venta.id_sucursal}"
+        sse_alertas.append(alerta)
 
 
     return {
